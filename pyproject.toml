@@ -1,0 +1,17 @@
+[project]
+name = "app-dev"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.136.3",
+    "gunicorn>=26.0.0",
+    "opencv-python>=4.13.0.92",
+    "passlib>=1.7.4",
+    "pyaudio>=0.2.14",
+    "speechrecognition>=3.16.1",
+    "uvicorn>=0.48.0",
+    "watchfiles>=1.2.0",
+    "word2number>=1.1",
+]

@@ -3,6 +3,11 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Hide env files 
+
+.myenv/
+.env
+
 # C extensions
 *.so
 
@@ -54,6 +59,9 @@ cover/
 # Translations
 *.mo
 *.pot
+
+.myenv/
+.env
 
 # Django stuff:
 *.log
