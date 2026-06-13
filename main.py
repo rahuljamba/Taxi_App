@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 import asyncio
 import random
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 app = FastAPI(title="Taxi App Dummy API")
 
@@ -33,6 +35,7 @@ def add_users(user: User):
     return {"status": "success", "message": f" {user.name} added sucesfully our database !!"}  
 
 # WebSocket Endpoint
+# Test stock name - RELIANCE, TATASTEEL, INFY
 @app.websocket("/ws/stocks/{ticker}")
 async def websocket_endpoint(websocket: WebSocket, ticker: str):
     # 1. Connection Accept karo
@@ -70,3 +73,54 @@ async def websocket_endpoint(websocket: WebSocket, ticker: str):
     except WebSocketDisconnect:
         # 4. Handle Disconnection safely
         print(f"Client disconnected from stock: {ticker}")
+
+# 1. DATABASE SETUP
+DATABASE_URL = "sqlite:///./company.db"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# 2. DATABASE MODEL (Table Structure)
+class Employee(Base):
+    __tablename__ = "employee"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    mobileNumber = Column(String)
+    dob = Column(String) 
+    gender = Column(String)
+    location = Column(String)
+    nationality = Column(String)
+
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.post("/regiter_employee/")
+def regiter_employee(name: str, mobileNumber: str, dob: str, gender: str, location: str, nationality: str, db: Session = Depends(get_db)):
+    new_item = Employee(name = name, mobileNumber = mobileNumber, dob = dob, gender = gender, location = location, nationality = nationality)
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)  
+    return {"status": "success", "data": new_item}
+
+@app.get("/get_employee_list")
+def get_employee_list(db: Session = Depends(get_db)):
+    employes_list = db.query(Employee).all()
+    if not employes_list:
+        return {"status": "failed", "message": "employees list is empty."}
+    return {"status": "success", "data": employes_list}
+
+@app.get("/get_employee/{emp_id}")
+def get_employee(emp_id: int, db: Session = Depends(get_db)):
+    item = db.query(Employee).filter(Employee.id == emp_id).first()
+    if item is None:
+        #raise HTTPException(status_with=404, detail="Item not found")
+        return {"status": "failed", "message": "user is not found."}
+    return {"status": "success", "data": item}
